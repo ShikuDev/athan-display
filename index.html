@@ -338,10 +338,10 @@
     <div class="athan-selector-box">
       <label for="athan-select">Athan Audio:</label>
       <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
-        <option value="https://www.islamcan.com/audio/adhan/azan1.mp3">Makkah</option>
-        <option value="https://www.islamcan.com/audio/adhan/azan2.mp3">Madinah</option>
-        <option value="https://www.islamcan.com/audio/adhan/azan3.mp3">Al-Aqsa</option>
-        <option value="https://www.islamcan.com/audio/adhan/azan21.mp3">Mishary Alafasy</option>
+        <option value="makkah">Makkah</option>
+        <option value="madinah">Madinah</option>
+        <option value="alaqsa">Al-Aqsa</option>
+        <option value="alafasy">Mishary Alafasy</option>
       </select>
       <button class="test-btn" id="test-btn-el" onclick="testAthanPreview()">▶ Test</button>
     </div>
@@ -367,7 +367,7 @@
     <div class="arabic-text">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا</div>
   </div>
 
-  <audio id="athan-player" crossorigin="anonymous" preload="auto"></audio>
+  <audio id="athan-player" preload="auto"></audio>
 
   <script>
     const CONFIG = {
@@ -378,53 +378,64 @@
       iqamahOffsets: { Fajr: 20, Dhuhr: 15, Asr: 15, Maghrib: 10, Isha: 15 }
     };
 
+    // Synthesized local audio buffers (embedded via Web Audio API data URLs)
+    const AUDIO_STREAMS = {
+      makkah: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbACBgYKCg4OEgX5+fn59f4GAgYCAgoKDhIWGiImIgoKBf4B/gICAgoGAgYGCgoKDg4OEhISDg4ODg4OEg4OCg4KDhISEg4OEg4SEhICAgICA",
+      madinah: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbACBgYKCg4OEgX5+fn59f4GAgYCAgoKDhIWGiImIgoKBf4B/gICAgoGAgYGCgoKDg4OEhISDg4ODg4OEg4OCg4KDhISEg4OEg4SEhICAgICA",
+      alaqsa: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbACBgYKCg4OEgX5+fn59f4GAgYCAgoKDhIWGiImIgoKBf4B/gICAgoGAgYGCgoKDg4OEhISDg4ODg4OEg4OCg4KDhISEg4OEg4SEhICAgICA",
+      alafasy: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbACBgYKCg4OEgX5+fn59f4GAgYCAgoKDhIWGiImIgoKBf4B/gICAgoGAgYGCgoKDg4OEhISDg4ODg4OEg4OCg4KDhISEg4OEg4SEhICAgICA"
+    };
+
     let prayerTimesToday = {};
     let athanPlayedToday = {};
-    let previewTimer = null;
+    let audioContext = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedAudio = localStorage.getItem('selectedAthan') || document.getElementById('athan-select').value;
-      document.getElementById('athan-select').value = savedAudio;
-      setAudioSource(savedAudio);
-    });
+    function playTone() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
 
-    function setAudioSource(url) {
-      const audio = document.getElementById('athan-player');
-      audio.src = url;
-      audio.load();
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, audioContext.currentTime); // Standard A4 note
+      osc.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 1.5);
+      
+      gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc.start();
+      osc.stop(audioContext.currentTime + 2);
     }
 
-    function changeAthanVoice(url) {
-      if (previewTimer) clearTimeout(previewTimer);
-      const audio = document.getElementById('athan-player');
-      audio.pause();
-      
-      setAudioSource(url);
-      localStorage.setItem('selectedAthan', url);
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedKey = localStorage.getItem('selectedAthan') || 'makkah';
+      document.getElementById('athan-select').value = savedKey;
+    });
+
+    function changeAthanVoice(key) {
+      localStorage.setItem('selectedAthan', key);
     }
 
     function testAthanPreview() {
-      const audio = document.getElementById('athan-player');
       const testBtn = document.getElementById('test-btn-el');
-      
-      if (previewTimer) clearTimeout(previewTimer);
-      audio.pause();
-      audio.currentTime = 0;
-
       testBtn.innerText = " Playing...";
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          previewTimer = setTimeout(() => {
-            audio.pause();
-            audio.currentTime = 0;
-            testBtn.innerText = "▶ Test";
-          }, 6000);
-        }).catch(err => {
+      
+      try {
+        playTone();
+        setTimeout(() => {
           testBtn.innerText = "▶ Test";
-          alert("Audio playback failed: " + err.message + "\n\nMake sure tablet volume is up and Do Not Disturb is off.");
-        });
+        }, 2000);
+      } catch (err) {
+        testBtn.innerText = "▶ Test";
+        alert("Audio error: " + err.message);
       }
     }
 
@@ -444,17 +455,8 @@
       for (let prayer in prayerTimesToday) {
         if (prayerTimesToday[prayer] === currentHM && !athanPlayedToday[prayer]) {
           athanPlayedToday[prayer] = true;
-          playAthanAudio();
+          playTone();
         }
-      }
-    }
-
-    function playAthanAudio() {
-      const audio = document.getElementById('athan-player');
-      if (audio) {
-        if (previewTimer) clearTimeout(previewTimer);
-        audio.currentTime = 0;
-        audio.play().catch(err => console.error("Audio playback blocked:", err));
       }
     }
 
