@@ -34,7 +34,6 @@
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr;
       gap: 1rem;
-      cursor: pointer;
     }
 
     body::before {
@@ -231,6 +230,7 @@
       font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
+      min-width: 105px;
     }
 
     .widget-container {
@@ -395,7 +395,7 @@
     <div class="arabic-text">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا</div>
   </div>
 
-  <audio id="athan-player" preload="auto"></audio>
+  <audio id="athan-player" crossorigin="anonymous" preload="auto"></audio>
 
   <script>
     const CONFIG = {
@@ -406,31 +406,42 @@
       iqamahOffsets: { Fajr: 20, Dhuhr: 15, Asr: 15, Maghrib: 10, Isha: 15 }
     };
 
+    // Updated audio URLs with multi-CDN fallback
     const AUDIO_STREAMS = {
-      makkah: "https://cdn.aladhan.com/audio/adhans/makkah.mp3",
-      madinah: "https://cdn.aladhan.com/audio/adhans/madinah.mp3",
-      alaqsa: "https://cdn.aladhan.com/audio/adhans/alaqsa.mp3",
-      alafasy: "https://cdn.aladhan.com/audio/adhans/alafasy.mp3"
+      makkah: [
+        "https://cdn.aladhan.com/audio/adhans/makkah.mp3",
+        "https://media.islambook.com/audio/athan/makkah.mp3"
+      ],
+      madinah: [
+        "https://cdn.aladhan.com/audio/adhans/madinah.mp3",
+        "https://media.islambook.com/audio/athan/madinah.mp3"
+      ],
+      alaqsa: [
+        "https://cdn.aladhan.com/audio/adhans/alaqsa.mp3"
+      ],
+      alafasy: [
+        "https://cdn.aladhan.com/audio/adhans/alafasy.mp3"
+      ]
     };
 
     let prayerTimesToday = {};
     let athanPlayedToday = {};
     let previewTimer = null;
     let isAudioUnlocked = false;
+    let currentVoiceKey = 'makkah';
+    let currentSourceIndex = 0;
 
     const audioPlayer = document.getElementById('athan-player');
     const audioNotice = document.getElementById('audio-notice');
 
     window.addEventListener('DOMContentLoaded', () => {
-      const savedVoice = localStorage.getItem('selectedAthanVoice') || 'makkah';
-      document.getElementById('athan-select').value = savedVoice;
-      setAudioSource(savedVoice);
+      currentVoiceKey = localStorage.getItem('selectedAthanVoice') || 'makkah';
+      document.getElementById('athan-select').value = currentVoiceKey;
+      setAudioSource(currentVoiceKey);
     });
 
-    // Silent Audio Unlock Handler
     function unlockAudioSession() {
       if (isAudioUnlocked) return;
-
       audioPlayer.muted = true;
       audioPlayer.play().then(() => {
         audioPlayer.pause();
@@ -439,7 +450,7 @@
         isAudioUnlocked = true;
         audioNotice.classList.add('hidden');
       }).catch(err => {
-        console.log("Audio unlock pending interaction.");
+        console.log("Audio unlock pending gesture.");
       });
     }
 
@@ -447,15 +458,18 @@
       window.addEventListener(evt, unlockAudioSession, { once: false });
     });
 
-    function setAudioSource(voiceKey) {
-      audioPlayer.src = AUDIO_STREAMS[voiceKey] || AUDIO_STREAMS.makkah;
+    function setAudioSource(voiceKey, sourceIdx = 0) {
+      currentVoiceKey = voiceKey;
+      currentSourceIndex = sourceIdx;
+      const urls = AUDIO_STREAMS[voiceKey] || AUDIO_STREAMS.makkah;
+      audioPlayer.src = urls[currentSourceIndex] || urls[0];
       audioPlayer.load();
     }
 
     function changeAthanVoice(voiceKey) {
       if (previewTimer) clearTimeout(previewTimer);
       audioPlayer.pause();
-      setAudioSource(voiceKey);
+      setAudioSource(voiceKey, 0);
       localStorage.setItem('selectedAthanVoice', voiceKey);
     }
 
@@ -464,27 +478,63 @@
       const testBtn = document.getElementById('test-btn-el');
       
       if (previewTimer) clearTimeout(previewTimer);
-      audioPlayer.pause();
+      
+      // Stop current playback if already playing
+      if (testBtn.innerText.includes("Playing") || testBtn.innerText.includes("Loading")) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        testBtn.innerText = "▶ Test Audio";
+        return;
+      }
+
       audioPlayer.currentTime = 0;
       audioPlayer.muted = false;
 
       testBtn.innerText = "⏳ Loading...";
 
+      // Handle loading timeout / error fallback
+      const loadTimeout = setTimeout(() => {
+        if (audioPlayer.readyState < 2) {
+          tryNextAudioFallback(testBtn);
+        }
+      }, 5000);
+
       const playPromise = audioPlayer.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
+          clearTimeout(loadTimeout);
           isAudioUnlocked = true;
           audioNotice.classList.add('hidden');
-          testBtn.innerText = "🔊 Playing...";
+          testBtn.innerText = "⏹ Stop Test";
+          
           previewTimer = setTimeout(() => {
             audioPlayer.pause();
             audioPlayer.currentTime = 0;
             testBtn.innerText = "▶ Test Audio";
-          }, 10000);
+          }, 15000);
         }).catch(err => {
-          testBtn.innerText = "▶ Test Audio";
-          audioNotice.classList.remove('hidden');
+          clearTimeout(loadTimeout);
+          console.error("Audio playback error:", err);
+          tryNextAudioFallback(testBtn);
         });
+      }
+    }
+
+    function tryNextAudioFallback(testBtn) {
+      const urls = AUDIO_STREAMS[currentVoiceKey] || AUDIO_STREAMS.makkah;
+      if (currentSourceIndex + 1 < urls.length) {
+        currentSourceIndex++;
+        setAudioSource(currentVoiceKey, currentSourceIndex);
+        audioPlayer.play().then(() => {
+          testBtn.innerText = "⏹ Stop Test";
+        }).catch(() => {
+          testBtn.innerText = "❌ Network Error";
+          setTimeout(() => { testBtn.innerText = "▶ Test Audio"; }, 3000);
+        });
+      } else {
+        testBtn.innerText = "❌ Click Screen";
+        audioNotice.classList.remove('hidden');
+        setTimeout(() => { testBtn.innerText = "▶ Test Audio"; }, 3000);
       }
     }
 
