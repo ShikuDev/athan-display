@@ -6,169 +6,208 @@
   <title>Athan Clock Display</title>
   <style>
     :root {
-      --bg-color: #f4efe6;
-      --card-bg: #ffffff;
-      --text-dark: #2c2a29;
-      --text-muted: #736d6b;
-      --accent-green: #0d9488;
-      --accent-orange: #ea580c;
-      --accent-red: #c2410c;
-      --border-color: #e5decf;
+      /* Dark Tones & Sleek UI Palette */
+      --bg-dark: #0a0c10;
+      --card-bg: #141720;
+      --card-highlight: #1e2530;
+      --accent-main: #38bdf8; /* Vibrant light blue */
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-color: #2e3b4e;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
-      background-color: var(--bg-color);
-      /* Subtle geometric pattern overlay */
-      background-image: radial-gradient(#dcd4c3 1px, transparent 1px);
-      background-size: 24px 24px;
-      color: var(--text-dark);
+      background-color: var(--bg-dark);
+      /* Subtle brushed metal texture overlay */
+      background-image: 
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 4px),
+        linear-gradient(to bottom, #111, #000);
+      color: var(--text-main);
       height: 100vh;
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 2.5rem 3rem;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
       overflow: hidden;
-    }
-
-    /* Top Section: Main Clock & Date */
-    header {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 1.5rem;
-      padding: 1.5rem 2rem;
-      text-align: center;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
       position: relative;
     }
 
-    .time {
-      font-size: 6.5rem;
-      font-weight: 800;
-      letter-spacing: -2px;
-      line-height: 1;
-      color: var(--text-dark);
+    /* Animated Arabic Writing Layer */
+    .arabic-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 10rem;
+      color: rgba(255, 255, 255, 0.03); /* Extremely faint */
+      font-weight: 900;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: ArabicPulse 8s ease-in-out infinite;
+      z-index: 0;
     }
 
-    .date-container {
-      margin-top: 0.75rem;
-      font-size: 1.4rem;
-      font-weight: 600;
+    @keyframes ArabicPulse {
+      0%, 100% { opacity: 0.1; }
+      50% { opacity: 0.8; color: rgba(255, 255, 255, 0.15); }
+    }
+
+    /* Main Compact UI Container */
+    .dashboard {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 1.5rem;
+      width: 90%;
+      max-width: 1100px;
+      display: grid;
+      grid-template-columns: 2fr 3fr; /* Balanced layout */
+      gap: 1.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Left Section: Next Prayer & Countdown */
+    .next-prayer-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--border-color);
+      padding-right: 1.5rem;
+    }
+
+    .status-badge {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent-main);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 0.5rem;
+    }
+
+    .next-prayer-name {
+      font-size: 4.5rem;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .compact-countdown {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.5rem;
+    }
+
+    /* Right Section: Timings & Clock */
+    .details-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Compact 5-Prayer List */
+    .prayer-list {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+    }
+
+    .p-item {
+      background: var(--card-highlight);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .p-item.active {
+      border-color: var(--accent-main);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+
+    .p-item.active .p-name { color: var(--accent-main); }
+
+    .p-name {
+      font-size: 1rem;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
     }
 
-    /* Middle Section: Next Prayer Countdown Badge */
-    .next-prayer-banner {
-      background: var(--card-bg);
-      border: 2px solid var(--accent-orange);
-      border-radius: 1.25rem;
-      padding: 1rem 2.5rem;
+    .p-time {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    /* Compact Digital Clock & Date */
+    .bottom-status {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+      margin-top: 1rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.75rem;
     }
 
-    .next-prayer-title {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--accent-orange);
+    .digital-clock {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--accent-main);
+      line-height: 1;
+    }
+
+    .date-info {
+      text-align: right;
+      font-size: 1rem;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
-    .countdown {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--accent-orange);
-    }
-
-    /* Bottom Section: Prayer Cards Grid */
-    .prayer-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 1.25rem;
-    }
-
-    .prayer-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 1.25rem;
-      padding: 1.5rem 1rem;
-      text-align: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
-      transition: all 0.3s ease;
-    }
-
-    .prayer-card.active {
-      background-color: var(--accent-green);
-      color: #ffffff;
-      border-color: var(--accent-green);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 20px -5px rgba(13, 148, 136, 0.3);
-    }
-
-    .prayer-card.active .prayer-name {
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .prayer-name {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-      letter-spacing: 0.5px;
-    }
-
-    .prayer-time {
-      font-size: 1.8rem;
-      font-weight: 800;
-    }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="time" id="clock">00:00:00 PM</div>
-    <div class="date-container">
-      <span id="gregorian-date">---</span> &nbsp;|&nbsp; <span id="hijri-date">---</span>
-    </div>
-  </header>
+  <div class="arabic-overlay">ٱلصَّلَوٰةَ</div>
 
-  <div class="next-prayer-banner">
-    <div class="next-prayer-title">Next Prayer: <span id="next-prayer-name">--</span></div>
-    <div class="countdown" id="countdown">00:00:00</div>
-  </div>
+  <div class="dashboard">
+    <div class="next-prayer-group">
+      <div>
+        <div class="status-badge">Next Prayer</div>
+        <div class="next-prayer-name" id="next-prayer-name">Asr</div>
+      </div>
+      <div class="compact-countdown" id="countdown">00:00:00</div>
+    </div>
 
-  <div class="prayer-grid">
-    <div class="prayer-card" id="card-Fajr">
-      <div class="prayer-name">Fajr</div>
-      <div class="prayer-time" id="time-Fajr">--:--</div>
-    </div>
-    <div class="prayer-card" id="card-Dhuhr">
-      <div class="prayer-name">Dhuhr</div>
-      <div class="prayer-time" id="time-Dhuhr">--:--</div>
-    </div>
-    <div class="prayer-card" id="card-Asr">
-      <div class="prayer-name">Asr</div>
-      <div class="prayer-time" id="time-Asr">--:--</div>
-    </div>
-    <div class="prayer-card" id="card-Maghrib">
-      <div class="prayer-name">Maghrib</div>
-      <div class="prayer-time" id="time-Maghrib">--:--</div>
-    </div>
-    <div class="prayer-card" id="card-Isha">
-      <div class="prayer-name">Isha</div>
-      <div class="prayer-time" id="time-Isha">--:--</div>
+    <div class="details-group">
+      <div class="prayer-list">
+        <div class="p-item" id="card-Fajr"><div class="p-name">Fajr</div><div class="p-time" id="time-Fajr">--:--</div></div>
+        <div class="p-item" id="card-Dhuhr"><div class="p-name">Dhuhr</div><div class="p-time" id="time-Dhuhr">--:--</div></div>
+        <div class="p-item" id="card-Asr"><div class="p-name">Asr</div><div class="p-time" id="time-Asr">--:--</div></div>
+        <div class="p-item" id="card-Maghrib"><div class="p-name">Maghrib</div><div class="p-time" id="time-Maghrib">--:--</div></div>
+        <div class="p-item" id="card-Isha"><div class="p-name">Isha</div><div class="p-time" id="time-Isha">--:--</div></div>
+      </div>
+      
+      <div class="bottom-status">
+        <div class="digital-clock" id="clock">12:34:56 PM</div>
+        <div class="date-info">
+          <div id="gregorian-date">---</div>
+          <div id="hijri-date">---</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -257,7 +296,8 @@
         nextPrayerTime.setHours(parseInt(h), parseInt(m), 0, 0);
       }
 
-      document.querySelectorAll('.prayer-card').forEach(card => card.classList.remove('active'));
+      // Updated Compact Active Highlighting
+      document.querySelectorAll('.p-item').forEach(item => item.classList.remove('active'));
       document.getElementById(`card-${nextPrayer}`).classList.add('active');
       document.getElementById('next-prayer-name').innerText = nextPrayer;
 
