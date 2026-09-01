@@ -251,4 +251,28 @@
 
       if (!nextPrayer) {
         nextPrayer = 'Fajr';
-        const [h, m] = prayerTimesToday
+        const [h, m] = prayerTimesToday['Fajr'].split(':');
+        nextPrayerTime = new Date();
+        nextPrayerTime.setDate(now.getDate() + 1);
+        nextPrayerTime.setHours(parseInt(h), parseInt(m), 0, 0);
+      }
+
+      document.querySelectorAll('.prayer-card').forEach(card => card.classList.remove('active'));
+      document.getElementById(`card-${nextPrayer}`).classList.add('active');
+      document.getElementById('next-prayer-name').innerText = nextPrayer;
+
+      const diff = nextPrayerTime - now;
+      const hrs = Math.floor(diff / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+      document.getElementById('countdown').innerText = 
+        `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    setInterval(updateClock, 1000);
+    fetchPrayerTimes();
+    setInterval(fetchPrayerTimes, 1000 * 60 * 60 * 12);
+  </script>
+</body>
+</html>
