@@ -34,6 +34,7 @@
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr;
       gap: 1rem;
+      cursor: pointer;
     }
 
     body::before {
@@ -45,6 +46,27 @@
       pointer-events: none;
     }
 
+    .audio-banner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--accent-orange);
+      color: white;
+      text-align: center;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease;
+    }
+
+    .audio-banner.hidden {
+      transform: translateY(-100%);
+    }
+
     .schedule-container {
       grid-column: 1 / 2;
       grid-row: 1 / 2;
@@ -53,6 +75,7 @@
       flex-direction: column;
       gap: 0.4rem;
       max-width: 420px;
+      margin-top: 1rem;
     }
 
     .table-header {
@@ -116,6 +139,7 @@
       flex-direction: column;
       align-items: flex-end;
       justify-content: flex-start;
+      margin-top: 1rem;
     }
 
     .clock-card {
@@ -290,6 +314,10 @@
 </head>
 <body>
 
+  <div id="audio-notice" class="audio-banner">
+    🔔 TAP OR CLICK ANYWHERE ON THE SCREEN TO ENABLE AUTOMATIC ATHAN AUDIO
+  </div>
+
   <div class="schedule-container">
     <div class="table-header">
       <div></div>
@@ -343,7 +371,7 @@
         <option value="alaqsa">Al-Aqsa</option>
         <option value="alafasy">Mishary Alafasy</option>
       </select>
-      <button class="test-btn" id="test-btn-el" onclick="testAthanPreview()">▶ Test Audio</button>
+      <button class="test-btn" id="test-btn-el" onclick="testAthanPreview(event)">▶ Test Audio</button>
     </div>
   </div>
 
@@ -378,7 +406,6 @@
       iqamahOffsets: { Fajr: 20, Dhuhr: 15, Asr: 15, Maghrib: 10, Isha: 15 }
     };
 
-    // Verified CDN audio streams
     const AUDIO_STREAMS = {
       makkah: "https://cdn.aladhan.com/audio/adhans/makkah.mp3",
       madinah: "https://cdn.aladhan.com/audio/adhans/madinah.mp3",
@@ -389,8 +416,10 @@
     let prayerTimesToday = {};
     let athanPlayedToday = {};
     let previewTimer = null;
+    let isAudioUnlocked = false;
 
     const audioPlayer = document.getElementById('athan-player');
+    const audioNotice = document.getElementById('audio-notice');
 
     window.addEventListener('DOMContentLoaded', () => {
       const savedVoice = localStorage.getItem('selectedAthanVoice') || 'makkah';
@@ -398,10 +427,25 @@
       setAudioSource(savedVoice);
     });
 
-    // Unlocks browser audio policy on first screen interaction
-    document.body.addEventListener('click', () => {
-      audioPlayer.load();
-    }, { once: true });
+    // Silent Audio Unlock Handler
+    function unlockAudioSession() {
+      if (isAudioUnlocked) return;
+
+      audioPlayer.muted = true;
+      audioPlayer.play().then(() => {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        audioPlayer.muted = false;
+        isAudioUnlocked = true;
+        audioNotice.classList.add('hidden');
+      }).catch(err => {
+        console.log("Audio unlock pending interaction.");
+      });
+    }
+
+    ['click', 'touchstart', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, unlockAudioSession, { once: false });
+    });
 
     function setAudioSource(voiceKey) {
       audioPlayer.src = AUDIO_STREAMS[voiceKey] || AUDIO_STREAMS.makkah;
@@ -415,18 +459,22 @@
       localStorage.setItem('selectedAthanVoice', voiceKey);
     }
 
-    function testAthanPreview() {
+    function testAthanPreview(e) {
+      if (e) e.stopPropagation();
       const testBtn = document.getElementById('test-btn-el');
       
       if (previewTimer) clearTimeout(previewTimer);
       audioPlayer.pause();
       audioPlayer.currentTime = 0;
+      audioPlayer.muted = false;
 
       testBtn.innerText = "⏳ Loading...";
 
       const playPromise = audioPlayer.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
+          isAudioUnlocked = true;
+          audioNotice.classList.add('hidden');
           testBtn.innerText = "🔊 Playing...";
           previewTimer = setTimeout(() => {
             audioPlayer.pause();
@@ -435,7 +483,7 @@
           }, 10000);
         }).catch(err => {
           testBtn.innerText = "▶ Test Audio";
-          alert("Audio playback was prevented by your browser. Click anywhere on the screen once and try again.");
+          audioNotice.classList.remove('hidden');
         });
       }
     }
@@ -464,7 +512,11 @@
     function playAthanAudio() {
       if (previewTimer) clearTimeout(previewTimer);
       audioPlayer.currentTime = 0;
-      audioPlayer.play().catch(err => console.error("Playback blocked by browser:", err));
+      audioPlayer.muted = false;
+      audioPlayer.play().catch(err => {
+        console.error("Playback blocked by browser:", err);
+        audioNotice.classList.remove('hidden');
+      });
     }
 
     async function fetchPrayerTimes() {
