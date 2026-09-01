@@ -338,12 +338,12 @@
     <div class="athan-selector-box">
       <label for="athan-select">Athan Audio:</label>
       <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
-        <option value="https://cdn.aladhan.com/athan/Mecca.mp3">Makkah</option>
-        <option value="https://cdn.aladhan.com/athan/Madina.mp3">Madinah</option>
-        <option value="https://cdn.aladhan.com/athan/Al-Aqsa.mp3">Al-Aqsa</option>
-        <option value="https://cdn.aladhan.com/athan/Alafasy.mp3">Mishary Alafasy</option>
+        <option value="https://www.islamcan.com/audio/adhan/azan1.mp3">Makkah</option>
+        <option value="https://www.islamcan.com/audio/adhan/azan2.mp3">Madinah</option>
+        <option value="https://www.islamcan.com/audio/adhan/azan3.mp3">Al-Aqsa</option>
+        <option value="https://www.islamcan.com/audio/adhan/azan21.mp3">Mishary Alafasy</option>
       </select>
-      <button class="test-btn" onclick="testAthanPreview()">▶ Test</button>
+      <button class="test-btn" id="test-btn-el" onclick="testAthanPreview()">▶ Test</button>
     </div>
   </div>
 
@@ -367,9 +367,7 @@
     <div class="arabic-text">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا</div>
   </div>
 
-  <audio id="athan-player" preload="auto">
-    <source id="athan-source" src="https://cdn.aladhan.com/athan/Mecca.mp3" type="audio/mpeg">
-  </audio>
+  <audio id="athan-player" crossorigin="anonymous" preload="auto"></audio>
 
   <script>
     const CONFIG = {
@@ -382,61 +380,53 @@
 
     let prayerTimesToday = {};
     let athanPlayedToday = {};
-    let audioUnlocked = false;
     let previewTimer = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-      const savedAudio = localStorage.getItem('selectedAthan');
-      if (savedAudio) {
-        document.getElementById('athan-select').value = savedAudio;
-        document.getElementById('athan-source').src = savedAudio;
-        document.getElementById('athan-player').load();
-      }
+      const savedAudio = localStorage.getItem('selectedAthan') || document.getElementById('athan-select').value;
+      document.getElementById('athan-select').value = savedAudio;
+      setAudioSource(savedAudio);
     });
 
-    function changeAthanVoice(url) {
+    function setAudioSource(url) {
       const audio = document.getElementById('athan-player');
-      const source = document.getElementById('athan-source');
-      
+      audio.src = url;
+      audio.load();
+    }
+
+    function changeAthanVoice(url) {
       if (previewTimer) clearTimeout(previewTimer);
+      const audio = document.getElementById('athan-player');
       audio.pause();
       
-      source.src = url;
-      audio.load();
+      setAudioSource(url);
       localStorage.setItem('selectedAthan', url);
     }
 
     function testAthanPreview() {
       const audio = document.getElementById('athan-player');
-      if (!audio) return;
+      const testBtn = document.getElementById('test-btn-el');
       
       if (previewTimer) clearTimeout(previewTimer);
       audio.pause();
       audio.currentTime = 0;
-      
-      audio.play().then(() => {
-        audioUnlocked = true;
-        previewTimer = setTimeout(() => {
-          audio.pause();
-          audio.currentTime = 0;
-        }, 5000);
-      }).catch(err => {
-        console.error("Audio error:", err);
-      });
-    }
 
-    document.body.addEventListener('click', () => {
-      if (!audioUnlocked) {
-        const audio = document.getElementById('athan-player');
-        if (audio) {
-          audio.play().then(() => {
+      testBtn.innerText = " Playing...";
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          previewTimer = setTimeout(() => {
             audio.pause();
             audio.currentTime = 0;
-            audioUnlocked = true;
-          }).catch(e => console.log(e));
-        }
+            testBtn.innerText = "▶ Test";
+          }, 6000);
+        }).catch(err => {
+          testBtn.innerText = "▶ Test";
+          alert("Audio playback failed: " + err.message + "\n\nMake sure tablet volume is up and Do Not Disturb is off.");
+        });
       }
-    }, { once: true });
+    }
 
     function updateClock() {
       const now = new Date();
