@@ -198,6 +198,17 @@
       cursor: pointer;
     }
 
+    .test-btn {
+      background: var(--accent-orange);
+      color: var(--text-white);
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     .widget-container {
       grid-column: 1 / 2;
       grid-row: 2 / 3;
@@ -324,16 +335,16 @@
       </div>
     </div>
 
- <div class="athan-selector-box">
-  <label for="athan-select">Athan Audio:</label>
-  <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
-    <option value="https://cdn.aladhan.com/athan/Mecca.mp3">Makkah</option>
-    <option value="https://cdn.aladhan.com/athan/Madina.mp3">Madinah</option>
-    <option value="https://cdn.aladhan.com/athan/Al-Aqsa.mp3">Al-Aqsa</option>
-    <option value="https://cdn.aladhan.com/athan/Alafasy.mp3">Mishary Alafasy</option>
-  </select>
-  <button id="preview-btn" onclick="testAthanPreview()" style="background: var(--accent-orange); color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">▶ Test</button>
-</div>
+    <div class="athan-selector-box">
+      <label for="athan-select">Athan Audio:</label>
+      <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
+        <option value="https://cdn.aladhan.com/athan/Mecca.mp3">Makkah</option>
+        <option value="https://cdn.aladhan.com/athan/Madina.mp3">Madinah</option>
+        <option value="https://cdn.aladhan.com/athan/Al-Aqsa.mp3">Al-Aqsa</option>
+        <option value="https://cdn.aladhan.com/athan/Alafasy.mp3">Mishary Alafasy</option>
+      </select>
+      <button class="test-btn" onclick="testAthanPreview()">▶ Test</button>
+    </div>
   </div>
 
   <div class="widget-container">
@@ -387,23 +398,31 @@
       const audio = document.getElementById('athan-player');
       const source = document.getElementById('athan-source');
       
-      // Stop any running preview or active audio
       if (previewTimer) clearTimeout(previewTimer);
       audio.pause();
       
-      // Load new sound
       source.src = url;
       audio.load();
       localStorage.setItem('selectedAthan', url);
+    }
 
-      // Play a 5-second sample preview
+    function testAthanPreview() {
+      const audio = document.getElementById('athan-player');
+      if (!audio) return;
+      
+      if (previewTimer) clearTimeout(previewTimer);
+      audio.pause();
       audio.currentTime = 0;
+      
       audio.play().then(() => {
+        audioUnlocked = true;
         previewTimer = setTimeout(() => {
           audio.pause();
           audio.currentTime = 0;
-        }, 5000); // 5000ms = 5 seconds
-      }).catch(err => console.log("Preview blocked until first tap:", err));
+        }, 5000);
+      }).catch(err => {
+        console.error("Audio error:", err);
+      });
     }
 
     document.body.addEventListener('click', () => {
@@ -443,7 +462,7 @@
     function playAthanAudio() {
       const audio = document.getElementById('athan-player');
       if (audio) {
-        if (previewTimer) clearTimeout(previewTimer); // Clear preview timeout if prayer hits
+        if (previewTimer) clearTimeout(previewTimer);
         audio.currentTime = 0;
         audio.play().catch(err => console.error("Audio playback blocked:", err));
       }
