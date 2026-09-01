@@ -168,6 +168,37 @@
       color: var(--accent-orange-light);
     }
 
+    /* Athan Selection Styling */
+    .athan-selector-box {
+      margin-top: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 44, 58, 0.6);
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.8rem;
+    }
+
+    .athan-selector-box label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: rgba(255, 255, 255, 0.9);
+      text-transform: uppercase;
+    }
+
+    .athan-select {
+      background: var(--card-dark);
+      color: var(--text-white);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
     .widget-container {
       grid-column: 1 / 2;
       grid-row: 2 / 3;
@@ -293,6 +324,17 @@
         <div class="pill-value" id="countdown">00:00:00</div>
       </div>
     </div>
+
+    <!-- Athan Audio Dropdown Selector -->
+    <div class="athan-selector-box">
+      <label for="athan-select">Athan Audio:</label>
+      <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
+        <option value="https://cdn.aladhan.com/athan/Mecca.mp3">Makkah</option>
+        <option value="https://cdn.aladhan.com/athan/Madina.mp3">Madinah</option>
+        <option value="https://cdn.aladhan.com/athan/Al-Aqsa.mp3">Al-Aqsa</option>
+        <option value="https://cdn.aladhan.com/athan/Alafasy.mp3">Mishary Alafasy</option>
+      </select>
+    </div>
   </div>
 
   <div class="widget-container">
@@ -317,7 +359,7 @@
 
   <!-- Hidden Audio Element -->
   <audio id="athan-player" preload="auto">
-    <source src="https://cdn.aladhan.com/athan/Mecca.mp3" type="audio/mpeg">
+    <source id="athan-source" src="https://cdn.aladhan.com/athan/Mecca.mp3" type="audio/mpeg">
   </audio>
 
   <script>
@@ -332,6 +374,24 @@
     let prayerTimesToday = {};
     let athanPlayedToday = {};
     let audioUnlocked = false;
+
+    // Load saved Athan preference on boot
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedAudio = localStorage.getItem('selectedAthan');
+      if (savedAudio) {
+        document.getElementById('athan-select').value = savedAudio;
+        document.getElementById('athan-source').src = savedAudio;
+        document.getElementById('athan-player').load();
+      }
+    });
+
+    function changeAthanVoice(url) {
+      const audio = document.getElementById('athan-player');
+      const source = document.getElementById('athan-source');
+      source.src = url;
+      audio.load();
+      localStorage.setItem('selectedAthan', url);
+    }
 
     document.body.addEventListener('click', () => {
       if (!audioUnlocked) {
