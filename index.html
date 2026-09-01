@@ -324,15 +324,16 @@
       </div>
     </div>
 
-    <div class="athan-selector-box">
-      <label for="athan-select">Athan Audio:</label>
-      <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
-        <option value="https://cdn.aladhan.com/athan/Mecca.mp3">Makkah</option>
-        <option value="https://cdn.aladhan.com/athan/Madina.mp3">Madinah</option>
-        <option value="https://cdn.aladhan.com/athan/Al-Aqsa.mp3">Al-Aqsa</option>
-        <option value="https://cdn.aladhan.com/athan/Alafasy.mp3">Mishary Alafasy</option>
-      </select>
-    </div>
+ <div class="athan-selector-box">
+  <label for="athan-select">Athan Audio:</label>
+  <select id="athan-select" class="athan-select" onchange="changeAthanVoice(this.value)">
+    <option value="https://cdn.aladhan.com/athan/Mecca.mp3">Makkah</option>
+    <option value="https://cdn.aladhan.com/athan/Madina.mp3">Madinah</option>
+    <option value="https://cdn.aladhan.com/athan/Al-Aqsa.mp3">Al-Aqsa</option>
+    <option value="https://cdn.aladhan.com/athan/Alafasy.mp3">Mishary Alafasy</option>
+  </select>
+  <button id="preview-btn" onclick="testAthanPreview()" style="background: var(--accent-orange); color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">▶ Test</button>
+</div>
   </div>
 
   <div class="widget-container">
