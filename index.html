@@ -367,7 +367,7 @@
     <div class="arabic-text">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا</div>
   </div>
 
-  <audio id="athan-player" crossorigin="anonymous" preload="auto"></audio>
+  <audio id="athan-player" preload="auto"></audio>
 
   <script>
     const CONFIG = {
@@ -378,6 +378,7 @@
       iqamahOffsets: { Fajr: 20, Dhuhr: 15, Asr: 15, Maghrib: 10, Isha: 15 }
     };
 
+    // Verified CDN audio streams
     const AUDIO_STREAMS = {
       makkah: "https://cdn.aladhan.com/audio/adhans/makkah.mp3",
       madinah: "https://cdn.aladhan.com/audio/adhans/madinah.mp3",
@@ -389,48 +390,52 @@
     let athanPlayedToday = {};
     let previewTimer = null;
 
+    const audioPlayer = document.getElementById('athan-player');
+
     window.addEventListener('DOMContentLoaded', () => {
       const savedVoice = localStorage.getItem('selectedAthanVoice') || 'makkah';
       document.getElementById('athan-select').value = savedVoice;
       setAudioSource(savedVoice);
     });
 
+    // Unlocks browser audio policy on first screen interaction
+    document.body.addEventListener('click', () => {
+      audioPlayer.load();
+    }, { once: true });
+
     function setAudioSource(voiceKey) {
-      const audio = document.getElementById('athan-player');
-      audio.src = AUDIO_STREAMS[voiceKey] || AUDIO_STREAMS.makkah;
-      audio.load();
+      audioPlayer.src = AUDIO_STREAMS[voiceKey] || AUDIO_STREAMS.makkah;
+      audioPlayer.load();
     }
 
     function changeAthanVoice(voiceKey) {
       if (previewTimer) clearTimeout(previewTimer);
-      const audio = document.getElementById('athan-player');
-      audio.pause();
-      
+      audioPlayer.pause();
       setAudioSource(voiceKey);
       localStorage.setItem('selectedAthanVoice', voiceKey);
     }
 
     function testAthanPreview() {
-      const audio = document.getElementById('athan-player');
       const testBtn = document.getElementById('test-btn-el');
       
       if (previewTimer) clearTimeout(previewTimer);
-      audio.pause();
-      audio.currentTime = 0;
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
 
-      testBtn.innerText = " Playing...";
+      testBtn.innerText = "⏳ Loading...";
 
-      const playPromise = audio.play();
+      const playPromise = audioPlayer.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
+          testBtn.innerText = "🔊 Playing...";
           previewTimer = setTimeout(() => {
-            audio.pause();
-            audio.currentTime = 0;
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
             testBtn.innerText = "▶ Test Audio";
-          }, 10000); // Plays 10-second sample preview
+          }, 10000);
         }).catch(err => {
           testBtn.innerText = "▶ Test Audio";
-          alert("Audio stream failed to load: " + err.message + "\n\nMake sure your device has internet access and media volume is turned up.");
+          alert("Audio playback was prevented by your browser. Click anywhere on the screen once and try again.");
         });
       }
     }
@@ -457,12 +462,9 @@
     }
 
     function playAthanAudio() {
-      const audio = document.getElementById('athan-player');
-      if (audio) {
-        if (previewTimer) clearTimeout(previewTimer);
-        audio.currentTime = 0;
-        audio.play().catch(err => console.error("Audio playback blocked:", err));
-      }
+      if (previewTimer) clearTimeout(previewTimer);
+      audioPlayer.currentTime = 0;
+      audioPlayer.play().catch(err => console.error("Playback blocked by browser:", err));
     }
 
     async function fetchPrayerTimes() {
